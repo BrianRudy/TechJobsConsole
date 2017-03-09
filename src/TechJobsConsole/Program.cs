@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Text;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace TechJobsConsole
 {
@@ -8,7 +10,6 @@ namespace TechJobsConsole
         static void Main(string[] args)
         {
             // Create two Dictionary vars to hold info for menu and data
-
             // Top-level menu options
             Dictionary<string, string> actionChoices = new Dictionary<string, string>();
             actionChoices.Add("search", "Search");
@@ -27,7 +28,6 @@ namespace TechJobsConsole
             // Allow user to search/list until they manually quit with ctrl+c
             while (true)
             {
-
                 string actionChoice = GetUserSelection("View Jobs", actionChoices);
 
                 if (actionChoice.Equals("list"))
@@ -38,17 +38,20 @@ namespace TechJobsConsole
                     {
                         PrintJobs(JobData.FindAll());
                     }
+
                     else
                     {
                         List<string> results = JobData.FindAll(columnChoice);
 
                         Console.WriteLine("\n*** All " + columnChoices[columnChoice] + " Values ***");
+
                         foreach (string item in results)
                         {
                             Console.WriteLine(item);
                         }
                     }
                 }
+
                 else // choice is "search"
                 {
                     // How does the user want to search (e.g. by skill or employer)
@@ -63,13 +66,14 @@ namespace TechJobsConsole
                     // Fetch results
                     if (columnChoice.Equals("all"))
                     {
-                        Console.WriteLine("Search all fields not yet implemented.");
+                        searchResults = JobData.FindByValue(searchTerm);
                     }
+
                     else
                     {
                         searchResults = JobData.FindByColumnAndValue(columnChoice, searchTerm);
-                        PrintJobs(searchResults);
                     }
+                    PrintJobs(searchResults.ToImmutableList());
                 }
             }
         }
@@ -93,19 +97,29 @@ namespace TechJobsConsole
             do
             {
                 Console.WriteLine("\n" + choiceHeader + " by:");
-
                 for (int j = 0; j < choiceKeys.Length; j++)
+
                 {
                     Console.WriteLine(j + " - " + choices[choiceKeys[j]]);
                 }
 
                 string input = Console.ReadLine();
-                choiceIdx = int.Parse(input);
+
+                try
+                {
+                    choiceIdx = int.Parse(input);
+                }
+
+                catch (FormatException)
+                {
+                    choiceIdx = -1;
+                }
 
                 if (choiceIdx < 0 || choiceIdx >= choiceKeys.Length)
                 {
                     Console.WriteLine("Invalid choices. Try again.");
                 }
+
                 else
                 {
                     isValidChoice = true;
@@ -116,9 +130,33 @@ namespace TechJobsConsole
             return choiceKeys[choiceIdx];
         }
 
-        private static void PrintJobs(List<Dictionary<string, string>> someJobs)
+        /*
+         * Displays a list of dictionaries.
+         */
+        private static void PrintJobs(ImmutableList<Dictionary<string, string>> someJobs)
+
         {
-            Console.WriteLine("printJobs is not implemented yet");
+            string[] someJobsKey = new string[someJobs.Count];
+
+            if (someJobsKey.Length == 0)
+            {
+                Console.WriteLine("There are no results for that.");
+            }
+
+
+            StringBuilder sb = new StringBuilder();
+            foreach (Dictionary<string, string> job in someJobs)
+
+            {
+                sb.AppendLine("*****");
+                foreach (string key in job.Keys)
+                {
+                    sb.AppendFormat("{0}: {1}\n", key, job[key]);
+                }
+            }
+
+            sb.AppendLine("*****");
+            Console.WriteLine(sb.ToString());
         }
     }
 }
